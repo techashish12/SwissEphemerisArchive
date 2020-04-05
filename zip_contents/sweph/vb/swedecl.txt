@@ -1,5 +1,5 @@
 '
-' Swiss Ephemeris Release 1.60  9-jan-2000
+' Swiss Ephemeris Release 1.62  4-jan-2002
 '
 ' Declarations for Visual Basic 5.0
 ' The DLL file must exist in the same directory as the VB executable, or in a system
@@ -323,6 +323,20 @@ Private Declare Function swe_fixstar_ut_d Lib "swedll32.dll" _
         ) As Long       ' x must be first of six array elements
                         ' serr must be able to hold 256 bytes
                         ' star must be able to hold 40 bytes
+
+Private Declare Function swe_gauquelin_sector Lib "swedll32.dll" _
+        Alias "_swe_gauquelin_sector@52 ( _
+          ByVal tjd_ut as Double, _
+          ByVal ipl as Long, _
+          ByVal starname as String, _
+          ByVal iflag as Long, _
+          ByVal imeth as Long, _
+          ByRef geopos as Double, _
+          ByVal atpress as Double, _
+          ByVal attemp as Double, _
+          ByRef dgsect as Double, _
+          ByVal serr as Strin _
+        ) As Long
 
 Private Declare Function swe_get_ayanamsa Lib "swedll32.dll" _
         Alias "_swe_get_ayanamsa@8" ( _
@@ -653,7 +667,7 @@ Private Declare Function swe_set_sid_mode_d Lib "swedll32.dll" _
           ByRef ayan_t0 As Double _
         ) As Long 
 
-Private Declare Function swe_set_topo Lib "swedll32.dll" _
+Private Declare Sub swe_set_topo Lib "swedll32.dll" _
         Alias "_swe_set_topo@24" ( _
           ByVal geolon As Double, _
           ByVal geolat As Double, _
@@ -665,7 +679,7 @@ Private Declare Function swe_set_topo_d Lib "swedll32.dll" _
           ByRef geolon As Double, _
           ByRef geolat As Double, _
           ByRef altitude As Double _
-        ) 
+        ) as Long
 
 Private Declare Sub swe_set_tid_acc Lib "swedll32.dll" _
         Alias "_swe_set_tid_acc@8" ( _
@@ -731,6 +745,18 @@ Private Declare Function swe_sol_eclipse_when_glob Lib "swedll32.dll" _
           ByVal serr as String _
         ) As Long
 
+Private Declare Function swe_lun_occult_when_glob Lib "swedll32.dll" _
+        Alias "_swe_lun_occult_when_glob@36" ( _  
+          ByVal tjd_start as Double, _
+          ByVal ipl as Long, _
+          ByVal star As String, _
+          ByVal ifl as Long, _
+          ByVal ifltype as Long, _
+          ByRef tret as Double, _
+          ByVal backward as Long, _
+          ByVal serr as String _
+        ) As Long
+
 Private Declare Function swe_sol_eclipse_when_glob_d Lib "swedll32.dll" _
         Alias "_swe_sol_eclipse_when_glob_d@24" ( _  
           ByRef tjd_start as Double, _
@@ -744,6 +770,18 @@ Private Declare Function swe_sol_eclipse_when_glob_d Lib "swedll32.dll" _
 Private Declare Function swe_sol_eclipse_when_loc Lib "swedll32.dll" _
         Alias "_swe_sol_eclipse_when_loc@32" ( _  
           ByVal tjd_start as Double, _
+          ByVal ifl as Long, _
+          ByRef tret as Double, _
+          ByRef attr as Double, _
+          ByVal backward as Long, _
+          ByVal serr as String _
+        ) As Long
+
+Private Declare Function swe_lun_occult_when_loc Lib "swedll32.dll" _
+        Alias "_swe_lun_occult_when_loc@40" ( _  
+          ByVal tjd_start as Double, _
+          ByVal ipl as Long, _
+          ByVal star As String, _
           ByVal ifl as Long, _
           ByRef tret as Double, _
           ByRef attr as Double, _
@@ -770,6 +808,17 @@ Private Declare Function swe_sol_eclipse_where Lib "swedll32.dll" _
           ByVal serr as String _
         ) As Long
 
+Private Declare Function swe_lun_occult_where Lib "swedll32.dll" _
+        Alias "_swe_lun_occult_where@32" ( _  
+          ByVal tjd_ut as Double, _
+          ByVal ipl as Long, _
+          ByVal star As String, _
+          ByVal ifl as Long, _
+          ByRef geopos as Double, _
+          ByRef attr as Double, _
+          ByVal serr as String _
+        ) As Long
+
 Private Declare Function swe_sol_eclipse_where_d Lib "swedll32.dll" _
         Alias "_swe_sol_eclipse_where_d@20" ( _  
           ByRef tjd_ut as Double, _
@@ -783,7 +832,7 @@ Private Declare Function swe_time_equ Lib "swedll32.dll" _
         Alias "_swe_time_equ@16" ( _
           ByVal tjd_ut As Double, _
           ByRef e As double, _
-          ByRef serr As String _
+          ByVal serr As String _
         ) As Long
  
 ' values for gregflag in swe_julday() and swe_revjul()
@@ -791,6 +840,8 @@ Private Declare Function swe_time_equ Lib "swedll32.dll" _
  Const SE_GREG_CAL As Integer = 1
 
 ' planet and body numbers (parameter ipl) for swe_calc()
+ Const SE_ECL_NUT As Integer = -1
+
  Const SE_SUN As Integer = 0
  Const SE_MOON As Integer = 1
  Const SE_MERCURY As Integer = 2
@@ -815,12 +866,13 @@ Private Declare Function swe_time_equ Lib "swedll32.dll" _
   
  Const SE_NPLANETS  As Integer = 21
  Const SE_AST_OFFSET  As Integer = 10000
+ Const SE_VARUNA    As Integer = (SE_AST_OFFSET + 20000)
 
 ' Hamburger or Uranian ficticious "planets"
  Const SE_FICT_OFFSET As Integer = 40
  Const SE_FICT_MAX  As Integer = 999 'maximum number for ficticious planets
                                      'if taken from file seorbel.txt
- Const SE_NFICT_ELEM  As Integer = 15 'number of built-in ficticious planets
+ Const SE_NFICT_ELEM  As Integer = 19 'number of built-in ficticious planets
  Const SE_CUPIDO As Integer =           40
  Const SE_HADES As Integer =            41
  Const SE_ZEUS As Integer =             42
@@ -837,6 +889,10 @@ Private Declare Function swe_time_equ Lib "swedll32.dll" _
  Const SE_NEPTUNE_ADAMS As Integer =    52
  Const SE_PLUTO_LOWELL As Integer =     53
  Const SE_PLUTO_PICKERING As Integer =  54
+ Const SE_VULCAN As Integer =  55
+ Const SE_WHITE_MOON As Integer =  56
+ Const SE_PROSERPINA As Integer =  57
+ Const SE_WALDEMATH As Integer =  58
 
 ' points returned by swe_houses() and swe_houses_armc()
 ' in array ascmc(0...10)
@@ -845,7 +901,10 @@ Private Declare Function swe_time_equ Lib "swedll32.dll" _
  Const SE_ARMC      As Integer = 2
  Const SE_VERTEX    As Integer = 3
  Const SE_EQUASC    As Integer = 4	' "equatorial ascendant"
- Const SE_NASCMC    As Integer = 5	' number of such points
+ Const SE_COASC1    As Integer = 5	' "co-ascendant (W. Koch)"
+ Const SE_COASC2    As Integer = 6	' "co-ascendant (M. Munkasey)"
+ Const SE_POLASC    As Integer = 7	' "polar ascendant (M. Munkasey)"
+ Const SE_NASCMC    As Integer = 8	' number of such points
  
 ' iflag values for swe_calc()/swe_calc_ut() and swe_fixstar()/swe_fixstar_ut()
 Const SEFLG_JPLEPH As Long = 1
@@ -865,6 +924,15 @@ Const SEFLG_BARYCTR As Long = 16384
 Const SEFLG_TOPOCTR As Long = 32768
 Const SEFLG_SIDEREAL As Long = 65536
 
+Const SE_SIDBIT_ECL_T0 As Long = 256 ' for positions referred to equinox t0 
+Const SE_SIDBIT_SSY_PLANE As Long = 256 ' for positions referred to solar system plane 
+
+' used with swe_nod_aps() 
+Const SE_NOTBIT_MEAN As Long = 1 ' mean nodes/apsides 
+Const SE_NOTBIT_OSCU As Long = 2 ' osculating nodes/apsides 
+Const SE_NOTBIT_OSCU_BAR As Long = 4 ' same, but motion about solar system barycenter considered 
+Const SE_NOTBIT_FOPOINT As Long = 256 ' focal point of orbit instead of aphelion 
+
 'eclipse codes
 Const SE_ECL_CENTRAL As Long = 1
 Const SE_ECL_NONCENTRAL As Long = 2
@@ -879,6 +947,7 @@ Const SE_ECL_1ST_VISIBLE As Long = 512
 Const SE_ECL_2ND_VISIBLE As Long = 1024
 Const SE_ECL_3RD_VISIBLE As Long = 2048
 Const SE_ECL_4TH_VISIBLE As Long = 4096
+Const SE_ECL_ONE_TRY As Long = 32768
 
 'sidereal modes, for swe_set_sid_mode()
 Const SE_SIDM_FAGAN_BRADLEY    As Long = 0
